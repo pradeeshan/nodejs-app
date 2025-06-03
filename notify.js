@@ -1,10 +1,18 @@
-
 const https = require('https');
 
 const webhookUrl = process.env.DISCORD_WEBHOOK;
 const message = process.env.DISCORD_MESSAGE;
 
-const data = JSON.stringify({ content: message });
+if (!webhookUrl || !message) {
+  console.error('Missing webhook URL or message.');
+  process.exit(1);
+}
+
+console.log('Sending message:', message);
+
+const data = JSON.stringify({
+  content: String(message)
+});
 
 const url = new URL(webhookUrl);
 
@@ -14,7 +22,7 @@ const options = {
   method: 'POST',
   headers: {
     'Content-Type': 'application/json',
-    'Content-Length': data.length
+    'Content-Length': Buffer.byteLength(data)
   }
 };
 
