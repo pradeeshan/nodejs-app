@@ -68,7 +68,7 @@ pipeline{
     post {
         success {
             script {
-                withEnv(["DISCORD_MESSAGE=✅ Jenkins Job SUCCESS: ${env.JOB_NAME} #${env.BUILD_NUMBER}",
+                withEnv(["DISCORD_MESSAGE= Jenkins Job SUCCESS: ${env.JOB_NAME} #${env.BUILD_NUMBER}",
                     "DISCORD_WEBHOOK=https://canary.discord.com/api/webhooks/1377888904648331294/Cr0ASz-k7yzOq8aJ3iU76eH31bAoRExL72XKpA52_v0tU9Km_5UKa8wOSjNDVD7NAi12"]) {
                         bat 'node notify.js'
                     }
@@ -77,7 +77,7 @@ pipeline{
 
         failure {
             script {
-                withEnv(["DISCORD_MESSAGE=❌ Jenkins Job FAILED: ${env.JOB_NAME} #${env.BUILD_NUMBER}",
+                withEnv(["DISCORD_MESSAGE= Jenkins Job FAILED: ${env.JOB_NAME} #${env.BUILD_NUMBER}",
                     "DISCORD_WEBHOOK=https://canary.discord.com/api/webhooks/1377888904648331294/Cr0ASz-k7yzOq8aJ3iU76eH31bAoRExL72XKpA52_v0tU9Km_5UKa8wOSjNDVD7NAi12"]) {
                         bat 'node notify.js'
                 }
