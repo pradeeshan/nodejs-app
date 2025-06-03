@@ -9,7 +9,7 @@ app.get('/api/hello', (req, res) => {
 
 // Root endpoint
 app.get('/', (req, res) => {
-  res.send('Node.js Web Application running in Docker!');
+  res.send('Node.js Web Application running in Docker...!');
 });
 
 app.listen(port, () => {
