@@ -6,6 +6,7 @@ pipeline{
     }
 
     environment {
+        DISCORD_WEBHOOK = 'https://canary.discord.com/api/webhooks/1377888904648331294/Cr0ASz-k7yzOq8aJ3iU76eH31bAoRExL72XKpA52_v0tU9Km_5UKa8wOSjNDVD7NAi12'
         DOCKER_USER = "pradeeshan"
         IMAGE_NAME = 'nodejs-app'
         IMAGE_TAG = 'latest'
@@ -14,6 +15,20 @@ pipeline{
     }
     
     stages{
+        stage('Notify: Deploy started') {
+            steps {
+                script {
+                    withEnv(["DISCORD_MESSAGE=Deployment Started: ${env.JOB_NAME} #${env.BUILD_NUMBER}"]) {
+                        bat """
+                            curl -X POST -H "Content-Type: application/json" ^
+                            -d "{\\"content\\": \\"%DISCORD_MESSAGE%\\"}" ^
+                            "%DISCORD_WEBHOOK%"
+                        """
+                    }
+                }
+            }
+        }
+
         stage("Cleanup Workspace"){
             steps {
                 cleanWs()
@@ -68,18 +83,24 @@ pipeline{
     post {
         success {
             script {
-                withEnv(["DISCORD_MESSAGE= Jenkins Job SUCCESS: ${env.JOB_NAME} #${env.BUILD_NUMBER}",
-                    "DISCORD_WEBHOOK=https://canary.discord.com/api/webhooks/1377888904648331294/Cr0ASz-k7yzOq8aJ3iU76eH31bAoRExL72XKpA52_v0tU9Km_5UKa8wOSjNDVD7NAi12"]) {
-                        bat 'node notify.js'
-                    }
+                withEnv(["DISCORD_MESSAGE= SUCCESS: ${env.JOB_NAME} #${env.BUILD_NUMBER} deployed successfully"]) {
+                    bat """
+                        curl -X POST -H "Content-Type: application/json" ^
+                        -d "{\\"content\\": \\"%DISCORD_MESSAGE%\\"}" ^
+                        "%DISCORD_WEBHOOK%"
+                    """
+                }
             }
         }
 
         failure {
             script {
-                withEnv(["DISCORD_MESSAGE= Jenkins Job FAILED: ${env.JOB_NAME} #${env.BUILD_NUMBER}",
-                    "DISCORD_WEBHOOK=https://canary.discord.com/api/webhooks/1377888904648331294/Cr0ASz-k7yzOq8aJ3iU76eH31bAoRExL72XKpA52_v0tU9Km_5UKa8wOSjNDVD7NAi12"]) {
-                        bat 'node notify.js'
+                withEnv(["DISCORD_MESSAGE= FAILED: ${env.JOB_NAME} #${env.BUILD_NUMBER}. Check logs."]) {
+                    bat """
+                        curl -X POST -H "Content-Type: application/json" ^
+                        -d "{\\"content\\": \\"%DISCORD_MESSAGE%\\"}" ^
+                        "%DISCORD_WEBHOOK%"
+                    """
                 }
             }
         }
