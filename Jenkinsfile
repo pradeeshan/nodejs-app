@@ -30,6 +30,9 @@ pipeline{
         }
 
         stage("Stop Existing Container") {
+            options {
+                timeout(time: 30, unit: 'SECONDS') // Set timeout to 30 seconds
+            }
             steps {
                 script {
                     echo "Checking for existing container: ${IMAGE_NAME}"
