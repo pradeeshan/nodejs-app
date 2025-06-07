@@ -44,7 +44,7 @@ pipeline {
                         if (found) {
                             echo "Stopping and deleting PM2 process ${IMAGE_NAME}..."
                             bat "pm2 stop ${IMAGE_NAME}"
-                            bat "pm2 delete ${IMAGE_NAME}"
+                            // bat "pm2 delete ${IMAGE_NAME}"
                         } else {
                             echo "No PM2 process named ${IMAGE_NAME} found. Skipping..."
                         }
@@ -108,36 +108,20 @@ pipeline {
                             error("Failed to build or run Docker container: ${e.message}")
                         }
                     } else {
-                        try {
+                        try{
                             echo "Checking for existing PM2 process: ${IMAGE_NAME}"
-                            def pm2Raw = bat(script: 'pm2 jlist', returnStdout: true).trim()
-                            echo "PM2 Raw Output: ${pm2Raw}"
+                            def pm2Raw = bat(script: "pm2 list | findstr \"${IMAGE_NAME}\"", returnStatus: true)
 
-                            // Extract only JSON (look for lines that start with '[' and end with ']')
-                            def jsonStart = pm2Raw.indexOf('[')
-                            def jsonEnd = pm2Raw.lastIndexOf(']')
-                            def jsonText = pm2Raw.substring(jsonStart, jsonEnd + 1)
-                            echo "Json Text: ${jsonText}"
+                            def found = (pm2Raw == 0)  // returnStatus = 0 means command succeeded (process found)
+                            echo "PM2 process found? ${found}"
 
-                            if(jsonStart!=(jsonEnd-1)){
-                                def pm2List = readJSON text: jsonText
-                                echo "Parsed PM2 list: ${pm2List}"
-
-                                def found = pm2List.any { it.name == "${IMAGE_NAME}" }
-                                echo "Process found? ${found}"
-
-                                if (found) {
-                                    echo "Stopping and deleting PM2 process ${IMAGE_NAME}..."
-                                    bat "pm2 stop ${IMAGE_NAME}"
-                                    bat "pm2 delete ${IMAGE_NAME}"
-                                } else {
-                                    echo "Starting new PM2 process..."
-                                    bat "pm2 start server.js --name ${IMAGE_NAME}"
-                                }
+                            if (found) {
+                                echo "Restarting PM2 process ${IMAGE_NAME}..."
+                                bat "pm2 restart ${IMAGE_NAME}"
                             } else {
                                 echo "Starting new PM2 process..."
                                 bat "pm2 start server.js --name ${IMAGE_NAME}"
-                            }
+                            } 
                         } catch (Exception e) {
                             error("Failed to start/restart PM2 process: ${e.message}")
                         }
