@@ -29,6 +29,22 @@ pipeline{
             }
         }
 
+        stage("Stop Existing Container") {
+            steps {
+                script {
+                    echo "Checking for existing container: ${IMAGE_NAME}"
+                    def result = bat(script: "docker ps -a -q -f name=${IMAGE_NAME}", returnStdout: true).trim()
+                    if (result) {
+                        echo "Stopping and removing container ${IMAGE_NAME}..."
+                        bat "docker rm -f ${IMAGE_NAME}"
+                    } else {
+                        echo "No existing container named ${IMAGE_NAME} found. Skipping..."
+                    }
+                }
+            }
+        }
+
+
         stage("Check Port Availability") {
             steps {
                 script {
@@ -72,21 +88,20 @@ pipeline{
             }
         }
 
-         stage("Push to Docker Hub") {
-            steps {
-                script {
-                    withDockerRegistry(credentialsId: 'docker') {
-                        bat "docker push ${FULL_IMAGE_NAME}"
-                    }
-                }
-            }
-         }
+        //  stage("Push to Docker Hub") {
+        //     steps {
+        //         script {
+        //             withDockerRegistry(credentialsId: 'docker') {
+        //                 bat "docker push ${FULL_IMAGE_NAME}"
+        //             }
+        //         }
+        //     }
+        //  }
 
         stage("Deploy Container") {
             steps {
                 script {
                     bat """
-                        docker rm -f ${IMAGE_NAME} || true
                         docker run -d --name ${IMAGE_NAME} -p 3000:3000 ${FULL_IMAGE_NAME}
                     """
                 }
