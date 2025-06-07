@@ -56,7 +56,7 @@ pipeline {
                         def jsonStart = pm2Raw.indexOf('[')
                         def jsonEnd = pm2Raw.lastIndexOf(']')
                         def jsonText = pm2Raw.substring(jsonStart, jsonEnd + 1)
-                        echo "Json Text: ${jsonText}"
+                        echo "Json Text: ${jsonText}  ${jsonStart}  ${jsonEnd}"
 
                         def pm2List = readJSON text: jsonText
                         echo "Parsed PM2 list: ${pm2List}"
