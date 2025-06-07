@@ -83,7 +83,7 @@ pipeline {
                     def portCheck
                     if (isUnix()) {
                         portCheck = sh(
-                            script: "lsof -i :${PORT} | grep LISTEN",
+                            script: "ss -tuln | grep \":${PORT}\"",
                             returnStatus: true
                         )
                     } else {
