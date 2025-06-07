@@ -59,7 +59,7 @@ pipeline{
             steps {
                 script {
                     echo "Checking if port 3000 is available..."
-                    def portUsed = bat(script: "netstat -an | find ":${PORT}"", returnStatus: true)
+                    def portUsed = bat(script: "netstat -an | find \":${PORT}\"", returnStatus: true)
                     if (portUsed == 0) {
                         error("Port ${PORT} is already in use. Stopping pipeline.")
                     } else {
