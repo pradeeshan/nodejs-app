@@ -6,6 +6,7 @@ pipeline{
     }
 
     environment {
+
         DISCORD_WEBHOOK = 'https://canary.discord.com/api/webhooks/1377888904648331294/Cr0ASz-k7yzOq8aJ3iU76eH31bAoRExL72XKpA52_v0tU9Km_5UKa8wOSjNDVD7NAi12'
         DOCKER_USER = "pradeeshan"
         IMAGE_NAME = 'nodejs-app'
@@ -29,18 +30,33 @@ pipeline{
             }
         }
 
+        stage("Check Port Availability") {
+            steps {
+                script {
+                    echo "Checking if port 3000 is available..."
+                    def portUsed = bat(script: 'netstat -an | find ":3000"', returnStatus: true)
+                    if (portUsed == 0) {
+                        error("Port 3000 is already in use. Stopping pipeline.")
+                    } else {
+                        echo "Port 3000 is free. Continuing..."
+                    }
+                }
+            }
+        }
+
         stage("Cleanup Workspace"){
             steps {
                 cleanWs()
             }
-
         }
+
+
+
     
         stage("Checkout from SCM"){
             steps {
-                git 'https://github.com/pradeeshan/nodejs-app.git'
+                git 'https:github.com/pradeeshan/nodejs-app.git'
             }
-
         }
 
         stage('Install Dependencies') {
@@ -57,7 +73,7 @@ pipeline{
             }
         }
 
-        stage("Push to Docker Hub") {
+         stage("Push to Docker Hub") {
             steps {
                 script {
                     withDockerRegistry(credentialsId: 'docker') {
@@ -65,12 +81,11 @@ pipeline{
                     }
                 }
             }
-        }
+         }
 
         stage("Deploy Container") {
             steps {
                 script {
-                    
                     bat """
                         docker rm -f ${IMAGE_NAME} || true
                         docker run -d --name ${IMAGE_NAME} -p 3000:3000 ${FULL_IMAGE_NAME}
@@ -78,6 +93,9 @@ pipeline{
                 }
             }
         }
+
+
+
     }
 
     post {
