@@ -102,7 +102,11 @@ pipeline {
                     def portCheck
                     if (isUnix()) {
                         portCheck = sh(
-                            script: "netstat -tuln \| grep :${PORT}",
+                            script:  """
+                            \$port = ${PORT}
+                            \$listener = Get-NetTCPConnection -LocalPort \$port -ErrorAction SilentlyContinue
+                            if (\$listener) { exit 1 } else { exit 0 }
+                        """,
                             returnStatus: true
                         )
                     } else {
