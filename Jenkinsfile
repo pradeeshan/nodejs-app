@@ -36,7 +36,7 @@ pipeline{
             }
             steps {
                 script {
-                    if(iSDOCKER){
+                    if(${iSDOCKER}){
                         echo "Checking for existing container: ${IMAGE_NAME}"
                         def result = bat(script: "docker ps -a -q -f name=${IMAGE_NAME}", returnStdout: true).trim()
                         if (result) {
@@ -93,7 +93,7 @@ pipeline{
         stage("Build and Deploy Docker Image") {
             steps {
                 script {
-                    if (iSDOCKER) {
+                    if (${iSDOCKER}) {
                         bat """
                             docker build -t ${FULL_IMAGE_NAME} .
                             docker run -d --name ${IMAGE_NAME} -p ${PORT}:3000 ${FULL_IMAGE_NAME}
