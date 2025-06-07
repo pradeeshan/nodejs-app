@@ -19,10 +19,14 @@ pipeline {
             steps {
                 script {
                     if (isUnix()) {
-                        sh 'npm install -g pm2'
-                        sh 'apt update'
-                        sh 'apt install -y net-tools'
-                        sh 'netstat --version'
+                        sh """
+                            apt update
+                            apt install -y nodejs npm net-tools
+                            npm install -g pm2
+                            npm install
+                            pm2 --version
+                            netstat --version
+                        """
                     } else {
                         bat 'npm install -g pm2'
                     }
