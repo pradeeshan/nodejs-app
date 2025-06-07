@@ -15,11 +15,14 @@ pipeline {
     }
 
     stages {
-        stage('system Dependencies') {
+        stage('System Dependencies') {
             steps {
                 script {
                     if (isUnix()) {
                         sh 'npm install -g pm2'
+                        sh 'apt update'
+                        sh 'apt install -y net-tools'
+                        sh 'netstat --version'
                     } else {
                         bat 'npm install -g pm2'
                     }
