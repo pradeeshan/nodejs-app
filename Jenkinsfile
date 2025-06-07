@@ -36,28 +36,18 @@ pipeline {
                         }
                     } else {
                         echo "Checking for existing PM2 process: ${IMAGE_NAME}"
-                        def pm2Raw = bat(script: "pm2 list | findstr \"${IMAGE_NAME}\"", returnStdout: true).trim()
-                        echo "pm2Raw ${pm2Raw}"
+                        def pm2Raw = bat(script: "pm2 list | findstr \"${IMAGE_NAME}\"", returnStatus: true)
 
-                        // try {
-                        //     def pm2Json = new groovy.json.JsonSlurper().parseText(pm2Raw)
-                        //     def pm2Names = pm2Json.collect { it.name }
-                        //     echo "PM2 Process Names: ${pm2Names}"
-                            
-                        //     def found = pm2Names.any { it.name == "${IMAGE_NAME}" }
-                        //     echo "Process found? ${found}"
+                        def found = (pm2Raw == 0)  // returnStatus = 0 means command succeeded (process found)
+                        echo "PM2 process found? ${found}"
 
-                        //     if (found) {
-                        //         echo "Stopping and deleting PM2 process ${IMAGE_NAME}..."
-                        //         bat "pm2 stop ${IMAGE_NAME}"
-                        //         bat "pm2 delete ${IMAGE_NAME}"
-                        //     } else {
-                        //         echo "No PM2 process named ${IMAGE_NAME} found. Skipping..."
-                        //     }
-                        // } catch (Exception e) {
-                        //     echo "Failed to parse JSON: ${e.message}"
-                        //     echo "Raw Output: ${pm2Raw}"
-                        // }
+                        if (found) {
+                            echo "Stopping and deleting PM2 process ${IMAGE_NAME}..."
+                            bat "pm2 stop ${IMAGE_NAME}"
+                            bat "pm2 delete ${IMAGE_NAME}"
+                        } else {
+                            echo "No PM2 process named ${IMAGE_NAME} found. Skipping..."
+                        }
                     }
                 }
             }
