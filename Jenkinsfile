@@ -107,8 +107,7 @@ pipeline{
                         } else {
                             echo "No PM2 process found. Starting new one..."
                             bat """
-                                set PORT=${PORT}
-                                pm2 start \"npm run pm2:server\" --name \"${IMAGE_NAME}\" ^
+                                PORT=\${PORT} pm2 start \"npm run pm2:server\" --name \"\${IMAGE_NAME}\" ^
                                 --merge-logs --log-date-format \"YYYY-MM-DD HH:mm:ss\" ^
                                 --output 0\"%USERPROFILE%\\.pm2\\logs\\\${IMAGE_NAME}.log\" ^
                                 --error \"%USERPROFILE%\\.pm2\\logs\\\${IMAGE_NAME}.log\" ^
