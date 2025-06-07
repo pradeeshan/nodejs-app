@@ -50,9 +50,14 @@ pipeline {
                     } else {
                         echo "Checking for existing PM2 process: ${IMAGE_NAME}"
                         def pm2List = bat(script: 'pm2 jlist', returnStdout: true).trim()
-                        echo "PM2 ${pm2List} [PM2]"
-                        if (pm2List.contains("${IMAGE_NAME}")) {
-                            echo "Stopping and deleting PM2 process ${IMAGE_NAME}... ${pm2List} ${pm2List.contains("${IMAGE_NAME}")}"
+                        echo "PM2 Raw Output: ${pm2Raw}"
+
+                        def pm2List = readJSON text: pm2Raw
+                        def found = pm2List.any { it.name == "${IMAGE_NAME}" }
+
+                        if (found) {
+                            echo "Stopping and deleting PM2 process ${IMAGE_NAME}..."
+                            bat "pm2 stop ${IMAGE_NAME}"
                             bat "pm2 delete ${IMAGE_NAME}"
                         } else {
                             echo "No PM2 process named ${IMAGE_NAME} found. Skipping..."
