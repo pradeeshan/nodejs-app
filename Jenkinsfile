@@ -65,6 +65,7 @@ pipeline {
 
                         if(isUnix()){
                             sh('pm2 list')
+                            sh("netstat -tuln | grep ':${PORT}'")
                         }else{
                             bat('pm2 list')
                         }
