@@ -40,6 +40,8 @@ pipeline{
                     if (result) {
                         echo "Stopping and removing container ${IMAGE_NAME}..."
                         bat "docker rm -f ${IMAGE_NAME}"
+                        echo "removing image ${FULL_IMAGE_NAME}..."
+                        bat "docker rmi ${FULL_IMAGE_NAME}"
                     } else {
                         echo "No existing container named ${IMAGE_NAME} found. Skipping..."
                     }
