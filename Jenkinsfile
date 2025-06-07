@@ -102,11 +102,7 @@ pipeline {
                     def portCheck
                     if (isUnix()) {
                         portCheck = sh(
-                            script:  """
-                            \$port = ${PORT}
-                            \$listener = Get-NetTCPConnection -LocalPort \$port -ErrorAction SilentlyContinue
-                            if (\$listener) { exit 1 } else { exit 0 }
-                        """,
+                            script: "netstat -tuln | grep ':${PORT}'",
                             returnStatus: true
                         )
                     } else {
@@ -116,6 +112,7 @@ pipeline {
                             if (\$listener) { exit 1 } else { exit 0 }
                         """, returnStatus: true)
                     }
+                    echo "portCheck -> ${portCheck}"
                     if (portCheck == 1) {
                         error("Port ${PORT} is already in use. Stopping pipeline.")
                     } else {
