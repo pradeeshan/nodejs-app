@@ -205,15 +205,17 @@ pipeline {
 // 🔔 Helper Function
 def sendDiscordNotification(String message) {
     if (isUnix()) {
+        echo "LUNIX"
         sh """
             curl -X POST -H "Content-Type: application/json" \\
             -d '{\"content\": \"${message}\"}' \\
             "${DISCORD_WEBHOOK}"
         """
     } else {
+        echo "WINDOWS"
         bat """
-            curl -X POST -H "Content-Type: application/json" ^ 
-            -d "{{\\"content\\": \\"${message}\\"}}" ^ 
+            curl -X POST -H "Content-Type: application/json" ^
+            -d "{\\"content\\": \\"${message}\\"}" ^
             "${DISCORD_WEBHOOK}"
         """
     }
