@@ -102,7 +102,7 @@ pipeline {
                     def portCheck
                     if (isUnix()) {
                         portCheck = sh(
-                            script: "netstat -tuln | grep :${PORT}",
+                            script: "netstat -tuln \| grep :${PORT}",
                             returnStatus: true
                         )
                     } else {
