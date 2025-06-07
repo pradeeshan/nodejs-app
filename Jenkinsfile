@@ -15,6 +15,18 @@ pipeline {
     }
 
     stages {
+        stage('system Dependencies') {
+            steps {
+                script {
+                    if (isUnix()) {
+                        sh 'npm install -g pm2'
+                    } else {
+                        bat 'npm install -g pm2'
+                    }
+                }
+            }
+        }
+
         stage('Stop Existing Container / PM2') {
             steps {
                 script {
@@ -61,7 +73,7 @@ pipeline {
                 }
             }
         }
-
+        
         stage('Cleanup Workspace') {
             steps {
                 cleanWs()
