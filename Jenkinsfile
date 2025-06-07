@@ -6,7 +6,7 @@ pipeline{
     }
 
     environment {
-        DISCORD_WEBHOOK = 'https:canary.discord.com/api/webhooks/1377888904648331294/Cr0ASz-k7yzOq8aJ3iU76eH31bAoRExL72XKpA52_v0tU9Km_5UKa8wOSjNDVD7NAi12'
+        DISCORD_WEBHOOK = 'https://canary.discord.com/api/webhooks/1377888904648331294/Cr0ASz-k7yzOq8aJ3iU76eH31bAoRExL72XKpA52_v0tU9Km_5UKa8wOSjNDVD7NAi12'
         DOCKER_USER = "pradeeshan"
         IMAGE_NAME = 'nodejs-app'
         IMAGE_TAG = 'latest'
