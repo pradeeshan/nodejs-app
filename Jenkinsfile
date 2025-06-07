@@ -90,27 +90,40 @@ pipeline{
             }
         }
 
-        stage("Build and Deploye Docker Image") {
+        stage("Build and Deploy Docker Image") {
             steps {
                 script {
-                    if(iSDOCKER){
+                    if (iSDOCKER) {
                         bat """
                             docker build -t ${FULL_IMAGE_NAME} .
                             docker run -d --name ${IMAGE_NAME} -p ${PORT}:3000 ${FULL_IMAGE_NAME}
                         """
-                    }else{
+                    } else {
                         echo "Checking for existing PM2 process..."
                         def pm2List = bat(script: 'pm2 jlist', returnStdout: true).trim()
-                        if (pm2List.contains("Fusion_PROD_Server")) {
+                        if (pm2List.contains("${IMAGE_NAME}")) {
                             echo "Restarting existing PM2 process..."
-                            bat "pm2 stop ${IMAGE_NAME}"
+                            bat "pm2 restart ${IMAGE_NAME}"
                         } else {
                             echo "No PM2 process found. Starting new one..."
-                            bat "P0ORT=${PORT} pm2 start \"npm ci && npm run start\" name ${IMAGE_NAME} merge-logs log-date-format \"YYYY-MM-DD HH:mm:ss\" output \"%USERPROFILE%\\.pm2\\logs\\${IMAGE_NAME}.log\" error \"%USERPROFILE%\\.pm2\\logs\\${IMAGE_NAME}.log\" exp-backoff-restart-delay=100 max-restarts 5 restart-delay 5000 max-memory-restart 1G watch ignore-watch \"$(type .gitignore .dockerignore)\""
+                            bat """
+                                set PORT=${PORT}
+                                pm2 start "npm run pm2:server" --name "${IMAGE_NAME}" ^
+                                --merge-logs --log-date-format "YYYY-MM-DD HH:mm:ss" ^
+                                --output "%USERPROFILE%\\.pm2\\logs\\\${IMAGE_NAME}.log" ^
+                                --error "%USERPROFILE%\\.pm2\\logs\\\${IMAGE_NAME}.log" ^
+                                --exp-backoff-restart-delay 100 ^
+                                --max-restarts 5 ^
+                                --restart-delay 5000 ^
+                                --max-memory-restart 1G ^
+                                --watch --ignore-watch "$(type .gitignore .dockerignore)"
+                            """
                         }
                     }
                 }
             }
+        }
+
         }
 
 
