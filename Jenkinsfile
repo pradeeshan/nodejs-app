@@ -30,15 +30,15 @@ pipeline {
             }
         }
 
-    stage('Stop Existing Container / PM2') {
-        options {
-            timeout(time: 30, unit: 'SECONDS')
-        }
-        steps {
-            script {
-                if (env.IS_DOCKER == 'true') {
-                    echo "Checking for existing container: ${IMAGE_NAME}"
-                    def containerId = bat(script: "docker ps -a -q -f name=${IMAGE_NAME}", returnStdout: true).trim()
+        stage('Stop Existing Container / PM2') {
+            options {
+                timeout(time: 30, unit: 'SECONDS')
+            }
+            steps {
+                script {
+                    if (env.IS_DOCKER == 'true') {
+                        echo "Checking for existing container: ${IMAGE_NAME}"
+                        def containerId = bat(script: "docker ps -a -q -f name=${IMAGE_NAME}", returnStdout: true).trim()
                         if (containerId) {
                             echo "Stopping and removing container ${IMAGE_NAME}..."
                             bat "docker rm -f ${IMAGE_NAME}"
@@ -47,33 +47,20 @@ pipeline {
                         } else {
                             echo "No existing container named ${IMAGE_NAME} found. Skipping..."
                         }
-                } else {
-                    echo "Checking for existing PM2 process: ${IMAGE_NAME}"
-                    def pm2List = bat(
-                        script: """
-                            set USERPROFILE=C:\\\\Users\\\\prade
-                            set HOMEPATH=\\\\Users\\\\prade
-                            pm2 jlist
-                        """,
-                        returnStdout: true
-                    ).trim()
-
-                if (pm2List.contains("${IMAGE_NAME}")) {
-                    echo "Stopping and deleting PM2 process ${IMAGE_NAME}..."
-                    bat """
-                        set USERPROFILE=C:\\\\Users\\\\prade
-                        set HOMEPATH=\\\\Users\\\\prade
-                        pm2 delete ${IMAGE_NAME}
-                    """
-                } else {
-                    echo "No PM2 process named ${IMAGE_NAME} found. Skipping..."
-                }
+                    } else {
+                        echo "Checking for existing PM2 process: ${IMAGE_NAME}"
+                        def pm2List = bat(script: 'pm2 jlist', returnStdout: true).trim()
+                        echo "PM2 ${pm2List} [PM2]"
+                        if (pm2List.contains("${IMAGE_NAME}")) {
+                            echo "Stopping and deleting PM2 process ${IMAGE_NAME}... ${pm2List} ${pm2List.contains("${IMAGE_NAME}")}"
+                            bat "pm2 delete ${IMAGE_NAME}"
+                        } else {
+                            echo "No PM2 process named ${IMAGE_NAME} found. Skipping..."
+                        }
+                    }
                 }
             }
         }
-    }
-
-
 
         stage('Check Port Availability') {
             steps {
