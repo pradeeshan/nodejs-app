@@ -36,7 +36,7 @@ pipeline {
                         }
                     } else {
                         echo "Checking for existing PM2 process: ${IMAGE_NAME}"
-                        def pm2Raw = bat(script: 'pm2 list | findstr \"${IMAGE_NAME}\"', returnStdout: true).trim()
+                        def pm2Raw = bat(script: "pm2 list | findstr \"${IMAGE_NAME}\"", returnStdout: true).trim()
                         echo "pm2Raw ${pm2Raw}"
 
                         // try {
