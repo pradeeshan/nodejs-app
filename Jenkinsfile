@@ -38,7 +38,7 @@ pipeline {
             steps {
                 script {
                     def fullImageName = "${DOCKER_USER}/${IMAGE_NAME}:${IMAGE_TAG}"
-                    
+                   
                     if (env.IS_DOCKER == 'true') {
                         echo "Checking for existing container: ${IMAGE_NAME}"
                         def containerId = isUnix() ?
@@ -69,6 +69,7 @@ pipeline {
                         if (found) {
                             echo "Stopping and deleting PM2 process ${IMAGE_NAME}..."
                             if (isUnix()) {
+                                sh "ifconfig"
                                 sh "pm2 stop ${IMAGE_NAME}"
                             } else {
                                 bat "pm2 stop ${IMAGE_NAME}"
