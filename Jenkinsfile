@@ -56,18 +56,22 @@ pipeline {
                         def jsonStart = pm2Raw.indexOf('[')
                         def jsonEnd = pm2Raw.lastIndexOf(']')
                         def jsonText = pm2Raw.substring(jsonStart, jsonEnd + 1)
-                        echo "Json Text: ${jsonText}  ${jsonStart}  ${jsonEnd}"
+                        echo "Json Text: ${jsonText}"
 
-                        def pm2List = readJSON text: jsonText
-                        echo "Parsed PM2 list: ${pm2List}"
+                        if(jsonStart-jsonEnd!=1){
+                            def pm2List = readJSON text: jsonText
+                            echo "Parsed PM2 list: ${pm2List}"
 
-                        def found = pm2List.any { it.name == "${IMAGE_NAME}" }
-                        echo "Process found? ${found}"
+                            def found = pm2List.any { it.name == "${IMAGE_NAME}" }
+                            echo "Process found? ${found}"
 
-                        if (found) {
-                            echo "Stopping and deleting PM2 process ${IMAGE_NAME}..."
-                            bat "pm2 stop ${IMAGE_NAME}"
-                            bat "pm2 delete ${IMAGE_NAME}"
+                            if (found) {
+                                echo "Stopping and deleting PM2 process ${IMAGE_NAME}..."
+                                bat "pm2 stop ${IMAGE_NAME}"
+                                bat "pm2 delete ${IMAGE_NAME}"
+                            } else {
+                                echo "No PM2 process named ${IMAGE_NAME} found. Skipping..."
+                            }
                         } else {
                             echo "No PM2 process named ${IMAGE_NAME} found. Skipping..."
                         }
