@@ -39,7 +39,7 @@ pipeline {
                         def pm2Raw = bat(script: 'pm2 jlist', returnStdout: true).trim()
                         echo "PM2 Raw Output: ${pm2Raw}"
 
-                        bat """
+                        def pm2TEST = bat """
                             echo "PM2 PM2"
                             @echo off
                             :: Capture PM2 list output to a temp file
@@ -60,10 +60,13 @@ pipeline {
 
                             :: Display the JSON output (optional)
                             type app_names.json
+                            echo "app_names.json"
 
                             :: Clean up the temp file (optional)
                             del app_names.json
                         """
+
+                        echo "${pm2TEST}"
 
                         // Extract only JSON (look for lines that start with '[' and end with ']')
                         def jsonStart = pm2Raw.indexOf('[')
