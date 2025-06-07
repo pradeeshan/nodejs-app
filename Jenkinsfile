@@ -36,49 +36,14 @@ pipeline {
                         }
                     } else {
                         echo "Checking for existing PM2 process: ${IMAGE_NAME}"
-                        def pm2Raw = bat(script: 'pm2 jlist', returnStdout: true).trim()
-                        echo "PM2 Raw Output: ${pm2Raw}"
+                         def pm2Raw = bat(script: 'pm2 jlist', returnStdout: true).trim()
 
-                        def pm2TEST = bat """
-                            echo "PM2 PM2"
-                            @echo off
-                            :: Capture PM2 list output to a temp file
-                            pm2 list > pm2_temp_list.txt
-
-                            :: Parse and extract app names
-                            echo "[", >> app_names.json
-                            set /a count=0
-                            for /f "tokens=3" %%a in ('findstr /b /r "name : " pm2_temp_list.txt') do (
-                                set /a count+=1
-                                echo.  ""%%a"", >> app_names.json
-                                if %count% neq !count! echo., >> app_names.json
-                            )
-                            echo. ] >> app_names.json
-
-                            :: Optional: Delete the temporary file
-                            del pm2_temp_list.txt
-
-                            :: Display the JSON output (optional)
-                            type app_names.json
-                            echo "app_names.json"
-
-                            :: Clean up the temp file (optional)
-                            del app_names.json
-                        """
-
-                        echo "${pm2TEST}"
-
-                        // Extract only JSON (look for lines that start with '[' and end with ']')
-                        def jsonStart = pm2Raw.indexOf('[')
-                        def jsonEnd = pm2Raw.lastIndexOf(']')
-                        def jsonText = pm2Raw.substring(jsonStart, jsonEnd + 1)
-                        echo "Json Text: ${jsonText}"
-
-                        if(jsonStart!=(jsonEnd-1)){
-                            def pm2List = readJSON text: jsonText
-                            echo "Parsed PM2 list: ${pm2List}"
-
-                            def found = pm2List.any { it.name == "${IMAGE_NAME}" }
+                        try {
+                            def pm2Json = new groovy.json.JsonSlurper().parseText(pm2Raw)
+                            def pm2Names = pm2Json.collect { it.name }
+                            echo "PM2 Process Names: ${pm2Names}"
+                            
+                            def found = pm2Names.any { it.name == "${IMAGE_NAME}" }
                             echo "Process found? ${found}"
 
                             if (found) {
@@ -88,8 +53,9 @@ pipeline {
                             } else {
                                 echo "No PM2 process named ${IMAGE_NAME} found. Skipping..."
                             }
-                        } else {
-                            echo "No PM2 process named ${IMAGE_NAME} found. Skipping..."
+                        } catch (Exception e) {
+                            echo "Failed to parse JSON: ${e.message}"
+                            echo "Raw Output: ${pm2Raw}"
                         }
                     }
                 }
