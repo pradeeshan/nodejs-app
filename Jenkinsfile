@@ -122,11 +122,31 @@ pipeline {
                         }
                     } else {
                         try {
-                            echo "Checking for existing PM2 process..."
-                            def pm2List = bat(script: 'pm2 jlist', returnStdout: true).trim()
-                            if (pm2List.contains("${IMAGE_NAME}")) {
-                                echo "Restarting existing PM2 process..."
-                                bat "pm2 restart ${IMAGE_NAME}"
+                            echo "Checking for existing PM2 process: ${IMAGE_NAME}"
+                            def pm2Raw = bat(script: 'pm2 jlist', returnStdout: true).trim()
+                            echo "PM2 Raw Output: ${pm2Raw}"
+
+                            // Extract only JSON (look for lines that start with '[' and end with ']')
+                            def jsonStart = pm2Raw.indexOf('[')
+                            def jsonEnd = pm2Raw.lastIndexOf(']')
+                            def jsonText = pm2Raw.substring(jsonStart, jsonEnd + 1)
+                            echo "Json Text: ${jsonText}"
+
+                            if(jsonStart!=(jsonEnd-1)){
+                                def pm2List = readJSON text: jsonText
+                                echo "Parsed PM2 list: ${pm2List}"
+
+                                def found = pm2List.any { it.name == "${IMAGE_NAME}" }
+                                echo "Process found? ${found}"
+
+                                if (found) {
+                                    echo "Stopping and deleting PM2 process ${IMAGE_NAME}..."
+                                    bat "pm2 stop ${IMAGE_NAME}"
+                                    bat "pm2 delete ${IMAGE_NAME}"
+                                } else {
+                                    echo "Starting new PM2 process..."
+                                    bat "pm2 start npm --name ${IMAGE_NAME} -- run start -- --port ${PORT}"
+                                }
                             } else {
                                 echo "Starting new PM2 process..."
                                 bat "pm2 start npm --name ${IMAGE_NAME} -- run start -- --port ${PORT}"
