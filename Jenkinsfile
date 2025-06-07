@@ -1,4 +1,4 @@
-pipeline{
+pipeline {
     agent any
 
     tools {
@@ -10,57 +10,67 @@ pipeline{
         DOCKER_USER = "pradeeshan"
         IMAGE_NAME = 'nodejs-app'
         IMAGE_TAG = 'latest'
-        PORT="3000"
+        PORT = "3000"
         FULL_IMAGE_NAME = "${DOCKER_USER}/${IMAGE_NAME}:${IMAGE_TAG}"
-        iSDOCKER = false
+        IS_DOCKER = 'false' // Changed to string for environment variable
     }
-    
-    stages{
-        stage('Notify: Deploy started') {
+
+    stages {
+        stage('Cleanup Workspace') {
+            steps {
+                cleanWs()
+            }
+        }
+
+        stage('Notify: Deploy Started') {
             steps {
                 script {
-                    withEnv(["DISCORD_MESSAGE=Deployment Started: ${env.JOB_NAME} #${env.BUILD_NUMBER}"]) {
-                        bat """
-                            curl -X POST -H "Content-Type: application/json" ^
-                            -d "{\\"content\\": \\"%DISCORD_MESSAGE%\\"}" ^
-                            "%DISCORD_WEBHOOK%"
-                        """
-                    }
+                    sendDiscordNotification("Deployment Started: ${env.JOB_NAME} #${env.BUILD_NUMBER}")
                 }
             }
         }
 
-        stage("Stop Existing Container / PM2") {
+        stage('Stop Existing Container / PM2') {
             options {
-                timeout(time: 30, unit: 'SECONDS') // Set timeout to 30 seconds
+                timeout(time: 30, unit: 'SECONDS')
             }
             steps {
                 script {
-                    if(${iSDOCKER}){
+                    if (env.IS_DOCKER == 'true') {
                         echo "Checking for existing container: ${IMAGE_NAME}"
-                        def result = bat(script: "docker ps -a -q -f name=${IMAGE_NAME}", returnStdout: true).trim()
-                        if (result) {
+                        def containerId = bat(script: "docker ps -a -q -f name=${IMAGE_NAME}", returnStdout: true).trim()
+                        if (containerId) {
                             echo "Stopping and removing container ${IMAGE_NAME}..."
                             bat "docker rm -f ${IMAGE_NAME}"
-                            echo "removing image ${FULL_IMAGE_NAME}..."
-                            bat "docker rmi ${FULL_IMAGE_NAME}"
+                            echo "Removing image ${FULL_IMAGE_NAME}..."
+                            bat(script: "docker rmi ${FULL_IMAGE_NAME}", returnStatus: true)
                         } else {
                             echo "No existing container named ${IMAGE_NAME} found. Skipping..."
                         }
-                    }else{
-                        // TODO: Check and stop the pm2 
+                    } else {
+                        echo "Checking for existing PM2 process: ${IMAGE_NAME}"
+                        def pm2List = bat(script: 'pm2 jlist', returnStdout: true).trim()
+                        if (pm2List.contains("${IMAGE_NAME}")) {
+                            echo "Stopping and deleting PM2 process ${IMAGE_NAME}..."
+                            bat "pm2 delete ${IMAGE_NAME}"
+                        } else {
+                            echo "No PM2 process named ${IMAGE_NAME} found. Skipping..."
+                        }
                     }
                 }
             }
         }
 
-
-        stage("Check Port Availability") {
+        stage('Check Port Availability') {
             steps {
                 script {
-                    echo "Checking if port 3000 is available..."
-                    def portUsed = bat(script: "netstat -an | find \":${PORT}\"", returnStatus: true)
-                    if (portUsed == 0) {
+                    echo "Checking if port ${PORT} is available..."
+                    def portCheck = powershell(script: """
+                        \$port = ${PORT}
+                        \$listener = Get-NetTCPConnection -LocalPort \$port -ErrorAction SilentlyContinue
+                        if (\$listener) { exit 1 } else { exit 0 }
+                    """, returnStatus: true)
+                    if (portCheck == 1) {
                         error("Port ${PORT} is already in use. Stopping pipeline.")
                     } else {
                         echo "Port ${PORT} is free. Continuing..."
@@ -69,16 +79,7 @@ pipeline{
             }
         }
 
-        stage("Cleanup Workspace"){
-            steps {
-                cleanWs()
-            }
-        }
-
-
-
-    
-        stage("Checkout from SCM"){
+        stage('Checkout from SCM') {
             steps {
                 git 'https://github.com/pradeeshan/nodejs-app.git'
             }
@@ -86,29 +87,33 @@ pipeline{
 
         stage('Install Dependencies') {
             steps {
-                bat 'npm install'
+                bat 'npm ci'
             }
         }
 
-        stage("Build and Deploy Docker Image") {
+        stage('Build and Deploy') {
             steps {
                 script {
-                    if (${iSDOCKER}) {
-                        bat """
-                            docker build -t ${FULL_IMAGE_NAME} .
-                            docker run -d --name ${IMAGE_NAME} -p ${PORT}:3000 ${FULL_IMAGE_NAME}
-                        """
+                    if (env.IS_DOCKER == 'true') {
+                        try {
+                            bat "docker build -t ${FULL_IMAGE_NAME} ."
+                            bat "docker run -d --name ${IMAGE_NAME} -p ${PORT}:3000 --restart unless-stopped ${FULL_IMAGE_NAME}"
+                        } catch (Exception e) {
+                            error("Failed to build or run Docker container: ${e.message}")
+                        }
                     } else {
-                        echo "Checking for existing PM2 process..."
-                        def pm2List = bat(script: 'pm2 jlist', returnStdout: true).trim()
-                        if (pm2List.contains("${IMAGE_NAME}")) {
-                            echo "Restarting existing PM2 process..."
-                            bat "pm2 restart ${IMAGE_NAME}"
-                        } else {
-                            echo "No PM2 process found. Starting new one..."
-                            bat """
-                                PORT=${PORT} pm2 start \"npm ci && npm run start\" --name "${IMAGE_NAME}"
-                            """
+                        try {
+                            echo "Checking for existing PM2 process..."
+                            def pm2List = bat(script: 'pm2 jlist', returnStdout: true).trim()
+                            if (pm2List.contains("${IMAGE_NAME}")) {
+                                echo "Restarting existing PM2 process..."
+                                bat "pm2 restart ${IMAGE_NAME}"
+                            } else {
+                                echo "Starting new PM2 process..."
+                                bat "pm2 start npm --name ${IMAGE_NAME} -- run start -- --port ${PORT}"
+                            }
+                        } catch (Exception e) {
+                            error("Failed to start/restart PM2 process: ${e.message}")
                         }
                     }
                 }
@@ -119,28 +124,22 @@ pipeline{
     post {
         success {
             script {
-                withEnv(["DISCORD_MESSAGE= SUCCESS: ${env.JOB_NAME} #${env.BUILD_NUMBER} deployed successfully"]) {
-                    bat """
-                        curl -X POST -H "Content-Type: application/json" ^
-                        -d "{\\"content\\": \\"%DISCORD_MESSAGE%\\"}" ^
-                        "%DISCORD_WEBHOOK%"
-                    """
-                }
+                sendDiscordNotification("SUCCESS: ${env.JOB_NAME} #${env.BUILD_NUMBER} deployed successfully")
             }
         }
-
         failure {
             script {
-                withEnv(["DISCORD_MESSAGE= FAILED: ${env.JOB_NAME} #${env.BUILD_NUMBER}. Check logs."]) {
-                    bat """
-                        curl -X POST -H "Content-Type: application/json" ^
-                        -d "{\\"content\\": \\"%DISCORD_MESSAGE%\\"}" ^
-                        "%DISCORD_WEBHOOK%"
-                    """
-                }
+                sendDiscordNotification("FAILED: ${env.JOB_NAME} #${env.BUILD_NUMBER}. Check logs.")
             }
         }
     }
-
 }
 
+// Helper function to send Discord notifications
+def sendDiscordNotification(String message) {
+    bat """
+        curl -X POST -H "Content-Type: application/json" ^
+        -d "{\\"content\\": \\"${message}\\"}" ^
+        "${DISCORD_WEBHOOK}"
+    """
+}
