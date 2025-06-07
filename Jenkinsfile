@@ -54,7 +54,7 @@ pipeline{
     
         stage("Checkout from SCM"){
             steps {
-                git 'https:github.com/pradeeshan/nodejs-app.git'
+                git 'https://github.com/pradeeshan/nodejs-app.git'
             }
         }
 
