@@ -49,7 +49,7 @@ pipeline {
                         }
                     } else {
                         echo "Checking for existing PM2 process: ${IMAGE_NAME}"
-                        def pm2List = bat(script: 'pm2 jlist', returnStdout: true).trim()
+                        def pm2Raw = bat(script: 'pm2 jlist', returnStdout: true)
                         echo "PM2 Raw Output: ${pm2Raw}"
 
                         def pm2List = readJSON text: pm2Raw
