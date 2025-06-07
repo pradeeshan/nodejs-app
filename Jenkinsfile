@@ -145,11 +145,11 @@ pipeline {
                                     bat "pm2 delete ${IMAGE_NAME}"
                                 } else {
                                     echo "Starting new PM2 process..."
-                                    bat "pm2 start npm --name ${IMAGE_NAME} -- run start -- --port ${PORT}"
+                                    bat "pm2 start server.js --name ${IMAGE_NAME}"
                                 }
                             } else {
                                 echo "Starting new PM2 process..."
-                                bat "pm2 start npm --name ${IMAGE_NAME} -- run start -- --port ${PORT}"
+                                bat "pm2 start server.js --name ${IMAGE_NAME}"
                             }
                         } catch (Exception e) {
                             error("Failed to start/restart PM2 process: ${e.message}")
