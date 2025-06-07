@@ -58,7 +58,7 @@ pipeline {
                         def jsonText = pm2Raw.substring(jsonStart, jsonEnd + 1)
                         echo "Json Text: ${jsonText}"
 
-                        if(jsonStart-jsonEnd!=1){
+                        if(jsonStart!=(jsonEnd-1)){
                             def pm2List = readJSON text: jsonText
                             echo "Parsed PM2 list: ${pm2List}"
 
