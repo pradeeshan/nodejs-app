@@ -40,6 +40,7 @@ pipeline {
                         echo "PM2 Raw Output: ${pm2Raw}"
 
                         bat """
+                            echo "PM2 PM2"
                             @echo off
                             :: Capture PM2 list output to a temp file
                             pm2 list > pm2_temp_list.txt
