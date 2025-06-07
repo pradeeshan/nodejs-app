@@ -87,17 +87,13 @@ pipeline {
                             returnStatus: true
                         )
                     } else {
-                        portCheck = powershell(
-                            script: """
-                                \$port = ${PORT}
-                                \$listener = Get-NetTCPConnection -LocalPort \$port -ErrorAction SilentlyContinue
-                                if (\$listener) { exit 1 } else { exit 0 }
-                            """,
-                            returnStatus: true
-                        )
+                       portCheck = powershell(script: """
+                            \$port = ${PORT}
+                            \$listener = Get-NetTCPConnection -LocalPort \$port -ErrorAction SilentlyContinue
+                            if (\$listener) { exit 1 } else { exit 0 }
+                        """, returnStatus: true)
                     }
-
-                    if (portCheck == 0) {
+                    if (portCheck == 1) {
                         error("Port ${PORT} is already in use. Stopping pipeline.")
                     } else {
                         echo "Port ${PORT} is free. Continuing..."
