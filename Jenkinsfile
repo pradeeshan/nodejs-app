@@ -71,7 +71,7 @@ pipeline {
         stage('Notify: Deploy Started') {
             steps {
                 script {
-                    sendDiscordNotification("🚀 Deployment Started: ${env.JOB_NAME} #${env.BUILD_NUMBER}")
+                    sendDiscordNotification("Deployment Started: ${env.JOB_NAME} #${env.BUILD_NUMBER}")
                 }
             }
         }
