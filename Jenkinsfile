@@ -10,8 +10,9 @@ pipeline{
         DOCKER_USER = "pradeeshan"
         IMAGE_NAME = 'nodejs-app'
         IMAGE_TAG = 'latest'
+        PORT="3000"
         FULL_IMAGE_NAME = "${DOCKER_USER}/${IMAGE_NAME}:${IMAGE_TAG}"
-        
+        iSDOCKER = false
     }
     
     stages{
@@ -29,21 +30,25 @@ pipeline{
             }
         }
 
-        stage("Stop Existing Container") {
+        stage("Stop Existing Container / PM2") {
             options {
                 timeout(time: 30, unit: 'SECONDS') // Set timeout to 30 seconds
             }
             steps {
                 script {
-                    echo "Checking for existing container: ${IMAGE_NAME}"
-                    def result = bat(script: "docker ps -a -q -f name=${IMAGE_NAME}", returnStdout: true).trim()
-                    if (result) {
-                        echo "Stopping and removing container ${IMAGE_NAME}..."
-                        bat "docker rm -f ${IMAGE_NAME}"
-                        echo "removing image ${FULL_IMAGE_NAME}..."
-                        bat "docker rmi ${FULL_IMAGE_NAME}"
-                    } else {
-                        echo "No existing container named ${IMAGE_NAME} found. Skipping..."
+                    if(iSDOCKER){
+                        echo "Checking for existing container: ${IMAGE_NAME}"
+                        def result = bat(script: "docker ps -a -q -f name=${IMAGE_NAME}", returnStdout: true).trim()
+                        if (result) {
+                            echo "Stopping and removing container ${IMAGE_NAME}..."
+                            bat "docker rm -f ${IMAGE_NAME}"
+                            echo "removing image ${FULL_IMAGE_NAME}..."
+                            bat "docker rmi ${FULL_IMAGE_NAME}"
+                        } else {
+                            echo "No existing container named ${IMAGE_NAME} found. Skipping..."
+                        }
+                    }else{
+                        // TODO: Check and stop the pm2 
                     }
                 }
             }
@@ -54,11 +59,11 @@ pipeline{
             steps {
                 script {
                     echo "Checking if port 3000 is available..."
-                    def portUsed = bat(script: 'netstat -an | find ":3000"', returnStatus: true)
+                    def portUsed = bat(script: "netstat -an | find ":${PORT}"", returnStatus: true)
                     if (portUsed == 0) {
-                        error("Port 3000 is already in use. Stopping pipeline.")
+                        error("Port ${PORT} is already in use. Stopping pipeline.")
                     } else {
-                        echo "Port 3000 is free. Continuing..."
+                        echo "Port ${PORT} is free. Continuing..."
                     }
                 }
             }
@@ -85,30 +90,25 @@ pipeline{
             }
         }
 
-        stage("Build Docker Image") {
+        stage("Build and Deploye Docker Image") {
             steps {
                 script {
-                    bat "docker build -t ${FULL_IMAGE_NAME} ."
-                }
-            }
-        }
-
-        //  stage("Push to Docker Hub") {
-        //     steps {
-        //         script {
-        //             withDockerRegistry(credentialsId: 'docker') {
-        //                 bat "docker push ${FULL_IMAGE_NAME}"
-        //             }
-        //         }
-        //     }
-        //  }
-
-        stage("Deploy Container") {
-            steps {
-                script {
-                    bat """
-                        docker run -d --name ${IMAGE_NAME} -p 3000:3000 ${FULL_IMAGE_NAME}
-                    """
+                    if(iSDOCKER){
+                        bat """
+                            docker build -t ${FULL_IMAGE_NAME} .
+                            docker run -d --name ${IMAGE_NAME} -p ${PORT}:3000 ${FULL_IMAGE_NAME}
+                        """
+                    }else{
+                        echo "Checking for existing PM2 process..."
+                        def pm2List = bat(script: 'pm2 jlist', returnStdout: true).trim()
+                        if (pm2List.contains("Fusion_PROD_Server")) {
+                            echo "Restarting existing PM2 process..."
+                            bat "pm2 stop ${IMAGE_NAME}"
+                        } else {
+                            echo "No PM2 process found. Starting new one..."
+                            bat "P0ORT=${PORT} pm2 start "npm run pm2:server" name ${IMAGE_NAME} merge-logs log-date-format "YYYY-MM-DD HH:mm:ss" output "%USERPROFILE%\\.pm2\\logs\\${IMAGE_NAME}.log" error "%USERPROFILE%\\.pm2\\logs\\${IMAGE_NAME}.log" exp-backoff-restart-delay=100 max-restarts 5 restart-delay 5000 max-memory-restart 1G watch ignore-watch "$(type .gitignore .dockerignore)""
+                        }
+                    }
                 }
             }
         }
