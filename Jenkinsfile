@@ -10,7 +10,7 @@ pipeline {
         DOCKER_USER = "pradeeshan"
         IMAGE_NAME = 'nodejs-app'
         IMAGE_TAG = 'latest'
-        PORT = "3000"
+        PORT = "10001"
         IS_DOCKER = 'false'
     }
 
