@@ -125,7 +125,7 @@ pipeline {
                             echo "Checking for existing PM2 process: ${IMAGE_NAME}"
                             def pm2Raw = bat(script: 'pm2 jlist', returnStdout: true).trim()
                             echo "PM2 Raw Output: ${pm2Raw}"
-
+                            
                             // Extract only JSON (look for lines that start with '[' and end with ']')
                             def jsonStart = pm2Raw.indexOf('[')
                             def jsonEnd = pm2Raw.lastIndexOf(']')
