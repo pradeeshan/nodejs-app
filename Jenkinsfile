@@ -110,7 +110,7 @@ pipeline {
                         """, returnStatus: true)
                     }
                     echo "portCheck -> ${portCheck}"
-                    if (portCheck != 0) {
+                    if ((portCheck ==  && isUnix())||(portCheck == 1 && !isUnix())) {
                         echo "Port ${PORT} is free. Continuing..."
                     } else {
                         error("Port ${PORT} is already in use. Stopping pipeline.")
