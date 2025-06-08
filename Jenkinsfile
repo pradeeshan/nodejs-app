@@ -13,19 +13,19 @@ pipeline {
         PM2_HOME = '/var/jenkins_home/.pm2'
     }
     stages {
-        stage('Install System Dependencies') {
-            steps {
-                script {
-                    if (isUnix()) {
-                        sh """
-                            sudo apt-get update
-                            sudo apt-get install -y net-tools curl
-                            npm install -g pm2@latest
-                        """
-                    }
-                }
-            }
-        }
+        // stage('Install System Dependencies') {
+        //     steps {
+        //         script {
+        //             if (isUnix()) {
+        //                 sh """
+        //                     sudo apt-get update
+        //                     sudo apt-get install -y net-tools curl
+        //                     npm install -g pm2@latest
+        //                 """
+        //             }
+        //         }
+        //     }
+        // }
         stage('Stop Existing Container / PM2') {
             steps {
                 script {
@@ -98,7 +98,7 @@ pipeline {
                     echo "Checking if port ${PORT} is available..."
                     def portCheck
                     def portCheck2 = sh(
-                        script: "netstat -tuln | grep ':${PORT}' || true",
+                        script: "netstat -tuln | grep ':8080' || true",
                         returnStatus: true
                     )
                     echo "portCheck2 -> ${portCheck2}"
