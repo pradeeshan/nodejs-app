@@ -15,24 +15,24 @@ pipeline {
     }
 
     stages {
-        // stage('System Dependencies') {
-        //     steps {
-        //         script {
-        //             if (isUnix()) {
-        //                 sh """
-        //                     apt update
-        //                     apt install -y nodejs npm net-tools
-        //                     npm install -g pm2
-        //                     npm install
-        //                     pm2 --version
-        //                     netstat --version
-        //                 """
-        //             } else {
-        //                 bat 'npm install -g pm2'
-        //             }
-        //         }
-        //     }
-        // }
+        stage('System Dependencies') {
+            steps {
+                script {
+                    if (isUnix()) {
+                        sh """
+                            apt update
+                            apt install -y nodejs npm net-tools
+                            npm install -g pm2
+                            npm install
+                            pm2 --version
+                            netstat --version
+                        """
+                    } else {
+                        bat 'npm install -g pm2'
+                    }
+                }
+            }
+        }
 
         stage('Stop Existing Container / PM2') {
             steps {
@@ -212,18 +212,18 @@ pipeline {
         }
     }
 
-    post {
-        success {
-            script {
-                sendDiscordNotification("SUCCESS: ${env.JOB_NAME} #${env.BUILD_NUMBER} deployed successfully")
-            }
-        }
-        failure {
-            script {
-                sendDiscordNotification("FAILED: ${env.JOB_NAME} #${env.BUILD_NUMBER}. Check logs.")
-            }
-        }
-    }
+    // post {
+    //     success {
+    //         script {
+    //             sendDiscordNotification("SUCCESS: ${env.JOB_NAME} #${env.BUILD_NUMBER} deployed successfully")
+    //         }
+    //     }
+    //     failure {
+    //         script {
+    //             sendDiscordNotification("FAILED: ${env.JOB_NAME} #${env.BUILD_NUMBER}. Check logs.")
+    //         }
+    //     }
+    // }
 }
 
 // 🔔 Helper Function
