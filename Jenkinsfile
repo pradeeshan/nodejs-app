@@ -20,14 +20,14 @@ pipeline {
                 script {
                     echo "System Dependencies"
                     if (isUnix()) {
-                        sh "apt-get update"
-                        sh "apt-get install -y iproute2"
-                        sh "apt update"
-                        sh "apt install -y nodejs npm net-tools"
-                        sh "npm install -g pm2"
-                        sh "npm install"
-                        sh "pm2 --version"
-                        sh "netstat --version"
+                        sh "sudo apt-get update"
+                        sh "sudo apt-get install -y iproute2"
+                        sh "sudo apt update"
+                        sh "sudo apt install -y nodejs npm net-tools"
+                        sh "sudo npm install -g pm2"
+                        sh "sudo npm install"
+                        sh "sudo pm2 --version"
+                        sh "sudo netstat --version"
                     } else {
                         bat 'npm install -g pm2'
                     }
