@@ -15,24 +15,26 @@ pipeline {
     }
 
     stages {
-        // stage('System Dependencies') {
-        //     steps {
-        //         script {
-        //             if (isUnix()) {
-        //                 sh """
-        //                     apt update
-        //                     apt install -y nodejs npm net-tools
-        //                     npm install -g pm2
-        //                     npm install
-        //                     pm2 --version
-        //                     netstat --version
-        //                 """
-        //             } else {
-        //                 bat 'npm install -g pm2'
-        //             }
-        //         }
-        //     }
-        // }
+        stage('System Dependencies') {
+            steps {
+                script {
+                    echo "System Dependencies"
+                    if (isUnix()) {
+                        sh "apt-get update"
+                        sh "apt-get install -y iproute2"
+                        sh "apt update"
+                        sh "apt install -y nodejs npm net-tools"
+                        sh "npm install -g pm2"
+                        sh "npm install"
+                        sh "pm2 --version"
+                        sh "netstat --version"
+                    } else {
+                        bat 'npm install -g pm2'
+                    }
+                    echo "System Dependencies completed"
+                }
+            }
+        }
 
         stage('Stop Existing Container / PM2') {
             steps {
@@ -226,21 +228,21 @@ pipeline {
     // }
 }
 
-// 🔔 Helper Function
-def sendDiscordNotification(String message) {
-    if (isUnix()) {
-        echo "LUNIX"
-        sh """
-            curl -X POST -H "Content-Type: application/json" \\
-            -d '{\"content\": \"${message}\"}' \\
-            "${DISCORD_WEBHOOK}"
-        """
-    } else {
-        echo "WINDOWS"
-        bat """
-            curl -X POST -H "Content-Type: application/json" ^
-            -d "{\\"content\\": \\"${message}\\"}" ^
-            "${DISCORD_WEBHOOK}"
-        """
-    }
-}
+// // Helper Function
+// def sendDiscordNotification(String message) {
+//     if (isUnix()) {
+//         echo "LUNIX"
+//         sh """
+//             curl -X POST -H "Content-Type: application/json" \\
+//             -d '{\"content\": \"${message}\"}' \\
+//             "${DISCORD_WEBHOOK}"
+//         """
+//     } else {
+//         echo "WINDOWS"
+//         bat """
+//             curl -X POST -H "Content-Type: application/json" ^
+//             -d "{\\"content\\": \\"${message}\\"}" ^
+//             "${DISCORD_WEBHOOK}"
+//         """
+//     }
+// }
