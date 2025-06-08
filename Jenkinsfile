@@ -97,14 +97,15 @@ pipeline {
                 script {
                     echo "Checking if port ${PORT} is available..."
                     def portCheck
-                    def portCheck2 = sh(
-                        script: "netstat -tuln | grep ':8080' || true",
-                        returnStatus: true
-                    )
-                    echo "portCheck2 -> ${portCheck2}"
+                    def portCheck2
                     if (isUnix()) {
                         portCheck = sh(
-                            script: "netstat -tuln | grep ':${PORT}' || true",
+                            script: "netstat -tuln | grep ':${PORT}' && exit 1 || true",
+                            returnStatus: true
+                        )
+                        // Check port 8080 (invert the logic to return 1 if port is in use)
+                        portCheck2 = sh(
+                            script: "netstat -tuln | grep ':8080' && exit 1 || exit 0",
                             returnStatus: true
                         )
                     } else {
@@ -113,9 +114,15 @@ pipeline {
                             \$listener = Get-NetTCPConnection -LocalPort \$port -ErrorAction SilentlyContinue
                             if (\$listener) { exit 0 } else { exit 1 }
                         """, returnStatus: true)
+                        portCheck = powershell(script: """
+                            \$port = 8080
+                            \$listener = Get-NetTCPConnection -LocalPort \$port -ErrorAction SilentlyContinue
+                            if (\$listener) { exit 0 } else { exit 1 }
+                        """, returnStatus: true)
                     }
                     echo "portCheck -> ${portCheck}"
-                    if ((portCheck == 0  && isUnix())||(portCheck == 1 && !isUnix())) {
+                    echo "portCheck2 -> ${portCheck2}"
+                    if (portCheck == 0) {
                         echo "Port ${PORT} is free. Continuing..."
                     } else {
                         error("Port ${PORT} is already in use. Stopping pipeline.")
