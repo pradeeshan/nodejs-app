@@ -97,6 +97,11 @@ pipeline {
                 script {
                     echo "Checking if port ${PORT} is available..."
                     def portCheck
+                    def portCheck2 = sh(
+                        script: "netstat -tuln | grep ':${PORT}' || true",
+                        returnStatus: true
+                    )
+                    echo "portCheck2 -> ${portCheck2}"
                     if (isUnix()) {
                         portCheck = sh(
                             script: "netstat -tuln | grep ':${PORT}' || true",
@@ -110,7 +115,7 @@ pipeline {
                         """, returnStatus: true)
                     }
                     echo "portCheck -> ${portCheck}"
-                    if ((portCheck ==  && isUnix())||(portCheck == 1 && !isUnix())) {
+                    if ((portCheck == 0  && isUnix())||(portCheck == 1 && !isUnix())) {
                         echo "Port ${PORT} is free. Continuing..."
                     } else {
                         error("Port ${PORT} is already in use. Stopping pipeline.")
