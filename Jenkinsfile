@@ -68,6 +68,12 @@ pipeline {
                         def found = (pm2Status == 0)
                         echo "PM2 process found? ${found}"
 
+                        if (isUnix()) {
+                            sh "pm2 ls"
+                        } else {
+                            bat "pm2 ls"
+                        }
+
                         if (found) {
                             echo "Stopping and deleting PM2 process ${IMAGE_NAME}..."
                             if (isUnix()) {
@@ -84,11 +90,11 @@ pipeline {
             }
         }
         
-        stage('Cleanup Workspace') {
-            steps {
-                cleanWs()
-            }
-        }
+        // stage('Cleanup Workspace') {
+        //     steps {
+        //         cleanWs()
+        //     }
+        // }
 
         // stage('Notify: Deploy Started') {
         //     steps {
