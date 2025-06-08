@@ -15,26 +15,26 @@ pipeline {
     }
 
     stages {
-        stage('System Dependencies') {
-            steps {
-                script {
-                    echo "System Dependencies"
-                    if (isUnix()) {
-                        sh "sudo apt-get update"
-                        sh "sudo apt-get install -y iproute2"
-                        sh "sudo apt update"
-                        sh "sudo apt install -y nodejs npm net-tools"
-                        sh "sudo npm install -g pm2"
-                        sh "sudo npm install"
-                        sh "sudo pm2 --version"
-                        sh "sudo netstat --version"
-                    } else {
-                        bat 'npm install -g pm2'
-                    }
-                    echo "System Dependencies completed"
-                }
-            }
-        }
+        // stage('System Dependencies') {
+        //     steps {
+        //         script {
+        //             echo "System Dependencies"
+        //             if (isUnix()) {
+        //                 sh "sudo apt-get update"
+        //                 sh "sudo apt-get install -y iproute2"
+        //                 sh "sudo apt update"
+        //                 sh "sudo apt install -y nodejs npm net-tools"
+        //                 sh "sudo npm install -g pm2"
+        //                 sh "sudo npm install"
+        //                 sh "sudo pm2 --version"
+        //                 sh "sudo netstat --version"
+        //             } else {
+        //                 bat 'npm install -g pm2'
+        //             }
+        //             echo "System Dependencies completed"
+        //         }
+        //     }
+        // }
 
         stage('Stop Existing Container / PM2') {
             steps {
@@ -90,13 +90,13 @@ pipeline {
             }
         }
 
-        stage('Notify: Deploy Started') {
-            steps {
-                script {
-                    sendDiscordNotification("Deployment Started: ${env.JOB_NAME} #${env.BUILD_NUMBER}")
-                }
-            }
-        }
+        // stage('Notify: Deploy Started') {
+        //     steps {
+        //         script {
+        //             sendDiscordNotification("Deployment Started: ${env.JOB_NAME} #${env.BUILD_NUMBER}")
+        //         }
+        //     }
+        // }
  
         stage('Check Port Availability') {
             steps {
