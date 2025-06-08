@@ -65,13 +65,6 @@ pipeline {
                             sh(script: "pm2 list | grep '${IMAGE_NAME}'", returnStatus: true) :
                             bat(script: "pm2 list | findstr \"${IMAGE_NAME}\"", returnStatus: true)
 
-                        if(isUnix()){
-                            sh('pm2 list')
-                            sh("ss -tupln | grep ':${PORT}'")
-                        }else{
-                            bat('pm2 list')
-                        }
-
                         def found = (pm2Status == 0)
                         echo "PM2 process found? ${found}"
 
