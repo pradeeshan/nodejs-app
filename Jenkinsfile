@@ -1,10 +1,8 @@
 pipeline {
     agent any
-
     tools {
         nodejs "node18"
     }
-
     environment {
         DISCORD_WEBHOOK = 'https://canary.discord.com/api/webhooks/1377888904648331294/Cr0ASz-k7yzOq8aJ3iU76eH31bAoRExL72XKpA52_v0tU9Km_5UKa8wOSjNDVD7NAi12'
         DOCKER_USER = "pradeeshan"
@@ -12,35 +10,26 @@ pipeline {
         IMAGE_TAG = 'latest'
         PORT = "10001"
         IS_DOCKER = 'false'
+        PM2_HOME = '/var/jenkins_home/.pm2'
     }
-
     stages {
-        // stage('System Dependencies') {
-        //     steps {
-        //         script {
-        //             echo "System Dependencies"
-        //             if (isUnix()) {
-        //                 sh "sudo apt-get update"
-        //                 sh "sudo apt-get install -y iproute2"
-        //                 sh "sudo apt update"
-        //                 sh "sudo apt install -y nodejs npm net-tools"
-        //                 sh "sudo npm install -g pm2"
-        //                 sh "sudo npm install"
-        //                 sh "sudo pm2 --version"
-        //                 sh "sudo netstat --version"
-        //             } else {
-        //                 bat 'npm install -g pm2'
-        //             }
-        //             echo "System Dependencies completed"
-        //         }
-        //     }
-        // }
-
+        stage('Install System Dependencies') {
+            steps {
+                script {
+                    if (isUnix()) {
+                        sh """
+                            sudo apt-get update
+                            sudo apt-get install -y net-tools curl
+                            npm install -g pm2@latest
+                        """
+                    }
+                }
+            }
+        }
         stage('Stop Existing Container / PM2') {
             steps {
                 script {
                     def fullImageName = "${DOCKER_USER}/${IMAGE_NAME}:${IMAGE_TAG}"
-                   
                     if (env.IS_DOCKER == 'true') {
                         echo "Checking for existing container: ${IMAGE_NAME}"
                         def containerId = isUnix() ?
@@ -62,25 +51,27 @@ pipeline {
                     } else {
                         echo "Checking for existing PM2 process: ${IMAGE_NAME}"
                         def pm2Status = isUnix() ?
-                            sh(script: "pm2 list | grep '${IMAGE_NAME}'", returnStatus: true) :
-                            bat(script: "pm2 list | findstr \"${IMAGE_NAME}\"", returnStatus: true)
+                            sh(script: "PM2_HOME=${PM2_HOME} pm2 list | grep '${IMAGE_NAME}' || true", returnStatus: true) :
+                            bat(script: "pm2 list | findstr \"${IMAGE_NAME}\" || true", returnStatus: true)
+
+                        if (isUnix()) {
+                            sh "PM2_HOME=${PM2_HOME} pm2 list || true"
+                            sh "netstat -tuln | grep ':${PORT}' || true"
+                        } else {
+                            bat "pm2 list || true"
+                        }
 
                         def found = (pm2Status == 0)
                         echo "PM2 process found? ${found}"
 
-                        if (isUnix()) {
-                            sh "pm2 ls"
-                        } else {
-                            bat "pm2 ls"
-                        }
-
                         if (found) {
                             echo "Stopping and deleting PM2 process ${IMAGE_NAME}..."
                             if (isUnix()) {
-                                sh "ifconfig"
-                                sh "pm2 stop ${IMAGE_NAME}"
+                                sh "PM2_HOME=${PM2_HOME} pm2 stop ${IMAGE_NAME} || true"
+                                sh "PM2_HOME=${PM2_HOME} pm2 delete ${IMAGE_NAME} || true"
                             } else {
-                                bat "pm2 stop ${IMAGE_NAME}"
+                                bat "pm2 stop ${IMAGE_NAME} || true"
+                                bat "pm2 delete ${IMAGE_NAME} || true"
                             }
                         } else {
                             echo "No PM2 process named ${IMAGE_NAME} found. Skipping..."
@@ -89,13 +80,11 @@ pipeline {
                 }
             }
         }
-        
-        // stage('Cleanup Workspace') {
-        //     steps {
-        //         cleanWs()
-        //     }
-        // }
-
+        stage('Cleanup Workspace') {
+            steps {
+                cleanWs()
+            }
+        }
         // stage('Notify: Deploy Started') {
         //     steps {
         //         script {
@@ -103,7 +92,6 @@ pipeline {
         //         }
         //     }
         // }
- 
         stage('Check Port Availability') {
             steps {
                 script {
@@ -111,32 +99,30 @@ pipeline {
                     def portCheck
                     if (isUnix()) {
                         portCheck = sh(
-                            script: "netstat -tuln | grep ':${PORT}'",
+                            script: "netstat -tuln | grep ':${PORT}' || true",
                             returnStatus: true
                         )
                     } else {
-                       portCheck = powershell(script: """
+                        portCheck = powershell(script: """
                             \$port = ${PORT}
                             \$listener = Get-NetTCPConnection -LocalPort \$port -ErrorAction SilentlyContinue
-                            if (\$listener) { exit 1 } else { exit 0 }
+                            if (\$listener) { exit 0 } else { exit 1 }
                         """, returnStatus: true)
                     }
                     echo "portCheck -> ${portCheck}"
-                    if ((portCheck == 0 && isUnix())||(portCheck == 1 && !isUnix())) {
-                        error("Port ${PORT} is already in use. Stopping pipeline.")
-                    } else {
+                    if (portCheck != 0) {
                         echo "Port ${PORT} is free. Continuing..."
+                    } else {
+                        error("Port ${PORT} is already in use. Stopping pipeline.")
                     }
                 }
             }
         }
-
         stage('Checkout from SCM') {
             steps {
                 git 'https://github.com/pradeeshan/nodejs-app.git'
             }
         }
-
         stage('Install Dependencies') {
             steps {
                 script {
@@ -148,12 +134,10 @@ pipeline {
                 }
             }
         }
-
         stage('Build and Deploy') {
             steps {
                 script {
                     def fullImageName = "${DOCKER_USER}/${IMAGE_NAME}:${IMAGE_TAG}"
-                    
                     if (env.IS_DOCKER == 'true') {
                         try {
                             if (isUnix()) {
@@ -170,8 +154,8 @@ pipeline {
                         try {
                             echo "Checking for existing PM2 process: ${IMAGE_NAME}"
                             def pm2Status = isUnix() ?
-                                sh(script: "pm2 list | grep '${IMAGE_NAME}'", returnStatus: true) :
-                                bat(script: "pm2 list | findstr \"${IMAGE_NAME}\"", returnStatus: true)
+                                sh(script: "PM2_HOME=${PM2_HOME} pm2 list | grep '${IMAGE_NAME}' || true", returnStatus: true) :
+                                bat(script: "pm2 list | findstr \"${IMAGE_NAME}\" || true", returnStatus: true)
 
                             def found = (pm2Status == 0)
                             echo "PM2 process found? ${found}"
@@ -179,29 +163,34 @@ pipeline {
                             if (found) {
                                 echo "Restarting PM2 process ${IMAGE_NAME}..."
                                 if (isUnix()) {
-                                    sh "pm2 restart ${IMAGE_NAME}"
+                                    sh "PM2_HOME=${PM2_HOME} pm2 restart ${IMAGE_NAME} || true"
                                 } else {
-                                    bat "pm2 restart ${IMAGE_NAME}"
+                                    bat "pm2 restart ${IMAGE_NAME} || true"
                                 }
                             } else {
                                 echo "Starting new PM2 process..."
                                 if (isUnix()) {
                                     sh """
+                                        export PM2_HOME=${PM2_HOME}
                                         PORT=${PORT} pm2 start "npm run pm2:consumer" \\
                                         --name "${IMAGE_NAME}" \\
                                         --merge-logs \\
                                         --log-date-format "YYYY-MM-DD HH:mm:ss" \\
                                         --output ~/.pm2/logs/${IMAGE_NAME}.log \\
-                                        --error ~/.pm2/logs/${IMAGE_NAME}.log \\
+                                        --error ~/.pm2/logs/${IMAGE_NAME}-error.log \\
                                         --exp-backoff-restart-delay=100 \\
-                                        --max-restarts 5 \\
-                                        --restart-delay 5000 \\
-                                        --max-memory-restart 1G \\
+                                        --max-restarts=5 \\
+                                        --restart-delay=5000 \\
+                                        --max-memory-restart=1G \\
                                         --watch \\
-                                        --ignore-watch "\$(cat .gitignore .dockerignore | xargs)"
+                                        --ignore-watch "\$(cat .gitignore 2>/dev/null || echo 'node_modules')"
+                                        pm2 save
+                                        pm2 ls
                                     """
                                 } else {
                                     bat "pm2 start server.js --name ${IMAGE_NAME}"
+                                    bat "pm2 save"
+                                    bat "pm2 ls"
                                 }
                             }
                         } catch (Exception e) {
@@ -212,7 +201,6 @@ pipeline {
             }
         }
     }
-
     // post {
     //     success {
     //         script {
@@ -227,13 +215,12 @@ pipeline {
     // }
 }
 
-// // Helper Function
 // def sendDiscordNotification(String message) {
 //     if (isUnix()) {
-//         echo "LUNIX"
+//         echo "LINUX"
 //         sh """
 //             curl -X POST -H "Content-Type: application/json" \\
-//             -d '{\"content\": \"${message}\"}' \\
+//             -d '{"content": "${message}"}' \\
 //             "${DISCORD_WEBHOOK}"
 //         """
 //     } else {
