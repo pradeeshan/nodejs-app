@@ -65,7 +65,7 @@ pipeline {
 
                         if(isUnix()){
                             sh('pm2 list')
-                            sh("netstat -tuln | grep ':${PORT}'")
+                            sh("ss -tupln | grep ':${PORT}'")
                         }else{
                             bat('pm2 list')
                         }
@@ -212,18 +212,18 @@ pipeline {
         }
     }
 
-    post {
-        success {
-            script {
-                sendDiscordNotification("SUCCESS: ${env.JOB_NAME} #${env.BUILD_NUMBER} deployed successfully")
-            }
-        }
-        failure {
-            script {
-                sendDiscordNotification("FAILED: ${env.JOB_NAME} #${env.BUILD_NUMBER}. Check logs.")
-            }
-        }
-    }
+    // post {
+    //     success {
+    //         script {
+    //             sendDiscordNotification("SUCCESS: ${env.JOB_NAME} #${env.BUILD_NUMBER} deployed successfully")
+    //         }
+    //     }
+    //     failure {
+    //         script {
+    //             sendDiscordNotification("FAILED: ${env.JOB_NAME} #${env.BUILD_NUMBER}. Check logs.")
+    //         }
+    //     }
+    // }
 }
 
 // 🔔 Helper Function
